@@ -1,0 +1,51 @@
+import sys
+
+try:
+    summary_file_path = sys.argv[1]
+except:
+    print("\n  You must provide the anvi'o pangenome summary txt as a parameter to this script :/\n")
+    sys.exit()
+
+IND_GC = None
+IND_GENOME = None
+d = {}
+
+with open(summary_file_path, 'r') as summary:
+    line_counter = 0
+    while 1:
+        line = summary.readline()
+
+        if not line:
+            break
+
+        line_counter += 1
+
+        if line_counter == 1:
+            # just in case the header changes in the future
+            headers = line.split('\t')
+            try:
+                # in case the user is being cheeky
+                IND_GC = headers.index('gene_cluster_id')
+                IND_GENOME = headers.index('genome_name')
+            except:
+                print("\n  The input file doesn't look like an anvi'o pangenome summary txt :/\n")
+                sys.exit()
+
+            continue
+
+        genome_name = line.split('\t')[IND_GENOME]
+        gc_name = line.split('\t')[IND_GC]
+
+        if gc_name not in d:
+            d[gc_name] = {}
+
+        if genome_name not in d[gc_name]:
+            d[gc_name][genome_name] = 0
+
+        d[gc_name][genome_name] += 1
+
+with open('collection_to_import.txt', 'w') as output:
+    for gc_name in d:
+        if len(set(list(d[gc_name].values()))) > 1:
+            output.write(f"{gc_name}\tUNEQUAL_PARALOGS\n")
+            print(gc_name, list(d[gc_name].values()))
